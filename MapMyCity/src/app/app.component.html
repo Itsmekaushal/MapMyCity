@@ -1,27 +1,34 @@
-<h1 style="text-align: center;">MapMyCity</h1>
+<div class="map-container">
+  <div style="flex: 2;">
+    <google-map height="100%" width="100%" [center]="center" [zoom]="zoom">
+      <map-marker
+        *ngFor="let marker of displayMarkers()"
+        [position]="marker.position"
+        [title]="marker.title"
+        (mapClick)="openInfoWindow(markerRef, marker)"
+        #markerRef>
+      </map-marker>
 
-<google-map [center]="center" [zoom]="zoom" height="400px" width="100%">
-  <map-marker
-    *ngFor="let cap of selectedCapitals"
-    [position]="{ lat: cap.lat, lng: cap.lng }"
-    [title]="cap.capital"
-    [label]="cap.capital">
-  </map-marker>
-</google-map>
+      <map-info-window *ngIf="selectedMarker">
+        <strong>{{ selectedMarker.title }}</strong><br />
+        <small>{{ selectedMarker.description }}</small>
+      </map-info-window>
+    </google-map>
+  </div>
 
-<div *ngFor="let country of countries" class="country-block">
-  <label>
-    <input
-      type="checkbox"
-      [(ngModel)]="country.selected"
-      (change)="toggleCountry(country)" />
-    {{ country.name }}
-  </label>
+  <div style="flex: 1; padding: 10px; overflow-y: auto;">
+    <div *ngFor="let country of locationData">
+      <label>
+        <input type="checkbox" [(ngModel)]="country.selected" (change)="onCountryToggle(country)">
+        {{ country.country }}
+      </label>
 
-  <ul *ngIf="country.selected">
-    <li *ngFor="let state of country.states">
-      <strong>{{ state.name }}</strong> — Capital: {{ state.capital }}<br />
-      <em>Known for:</em> {{ state.knownFor }}
-    </li>
-  </ul>
+      <div *ngFor="let city of country.cities" style="margin-left: 10px;">
+        <label>
+          <input type="checkbox" [(ngModel)]="city.selected" (change)="onCityToggle(city, country)">
+          {{ city.name }}
+        </label>
+      </div>
+    </div>
+  </div>
 </div>
