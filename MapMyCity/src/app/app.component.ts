@@ -1,57 +1,95 @@
-import { Component } from '@angular/core';
-
-interface State {
-  name: string;
-  capital: string;
-  lat: number;
-  lng: number;
-  knownFor: string;
-}
-
-interface Country {
-  name: string;
-  selected: boolean;
-  states: State[];
-}
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { MapInfoWindow, MapMarker } from '@angular/google-maps';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent {
-  center = { lat: 20.5937, lng: 78.9629 };
-  zoom = 4;
+export class AppComponent implements OnInit {
 
-  countries: Country[] = [
-    {
-      name: 'India',
-      selected: false,
-      states: [
-        { name: 'Maharashtra', capital: 'Mumbai', lat: 19.076, lng: 72.8777, knownFor: 'Bollywood & Finance' },
-        { name: 'West Bengal', capital: 'Kolkata', lat: 22.5726, lng: 88.3639, knownFor: 'Culture & Literature' }
-      ]
-    },
-    {
-      name: 'USA',
-      selected: false,
-      states: [
-        { name: 'California', capital: 'Sacramento', lat: 38.5816, lng: -121.4944, knownFor: 'Tech Hub' },
-        { name: 'Texas', capital: 'Austin', lat: 30.2672, lng: -97.7431, knownFor: 'Music Capital' }
-      ]
-    }
-  ];
+  @ViewChild(MapInfoWindow) infoWindow!: MapInfoWindow;
 
-  selectedCapitals: State[] = [];
+  title = 'city-map-app';
+  center: google.maps.LatLngLiteral = { lat: 21.0000, lng: 78.0000 };
+  zoom = 5;
+  defaultCenter: google.maps.LatLngLiteral = { lat: 21.0000, lng: 78.0000 };
+  defaultZoom = 4;
+  locationData: any[] = [];
+  selectedCityIDs: Set<string> = new Set();
 
-  toggleCountry(country: Country) {
-    country.selected = !country.selected;
-    this.updateSelectedCapitals();
+  selectedMarker: any = null;
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit(): void {
+    this.http.get<any[]>('assets/data.json').subscribe(data => {
+      this.locationData = data.map(country => ({
+        ...country,
+        selected: false,
+        cities: country.cities.map((city: any) => ({ ...city, selected: false }))
+      }));
+    });
   }
 
-  updateSelectedCapitals() {
-    this.selectedCapitals = this.countries
-      .filter(c => c.selected)
-      .flatMap(c => c.states);
+  onCityToggle(city: any, country: any) {
+    if (city.selected) {
+      this.selectedCityIDs.add(city.id);
+    } else {
+      this.selectedCityIDs.delete(city.id);
+    }
+
+    const count = this.selectedCityIDs.size;
+
+    if (count === 1) {
+      const selectedCityID = Array.from(this.selectedCityIDs)[0];
+      for (let country of this.locationData) {
+        const match = country.cities.find((city: any) => city.id === selectedCityID);
+        if (match) {
+          this.center = { lat: match.lat, lng: match.lng };
+          this.zoom = 10;
+          break;
+        }
+      }
+    } else if (count > 1) {
+      this.zoom = 4;
+    } else {
+      this.center = this.defaultCenter;
+      this.zoom = this.defaultZoom;
+    }
+  }
+
+  onCountryToggle(country: any) {
+    country.selected = !country.selected;
+    country.cities.forEach((city: any) => {
+      city.selected = country.selected;
+      if (country.selected) {
+        this.selectedCityIDs.add(city.id);
+      } else {
+        this.selectedCityIDs.delete(city.id);
+      }
+    });
+  }
+
+  displayMarkers(): any[] {
+    const markers: any[] = [];
+    this.locationData.forEach(country => {
+      country.cities.forEach((city: any) => {
+        if (this.selectedCityIDs.has(city.id)) {
+          markers.push({
+            position: { lat: city.lat, lng: city.lng },
+            title: city.name,
+            description: city.description
+          });
+        }
+      });
+    });
+    return markers;
+  }
+
+  openInfoWindow(marker: MapMarker, markerData: any) {
+    this.selectedMarker = markerData;
+    this.infoWindow.open(marker);
   }
 }
