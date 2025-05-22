@@ -1,12 +1,18 @@
 <div class="map-container">
   <div style="flex: 2;">
-    <google-map height="100%" width="100%" [center]="center" [zoom]="zoom">
+    <google-map
+      height="100%"
+      width="100%"
+      [center]="center"
+      [zoom]="zoom"
+    >
       <map-marker
         *ngFor="let marker of displayMarkers()"
         [position]="marker.position"
         [title]="marker.title"
         (mapClick)="openInfoWindow(markerRef, marker)"
-        #markerRef>
+        #markerRef
+      >
       </map-marker>
 
       <map-info-window *ngIf="selectedMarker">
@@ -19,13 +25,20 @@
   <div style="flex: 1; padding: 10px; overflow-y: auto;">
     <div *ngFor="let country of locationData">
       <label>
-        <input type="checkbox" [(ngModel)]="country.selected" (change)="onCountryToggle(country)">
+        <input
+          type="checkbox"
+          [(ngModel)]="country.selected"
+          (change)="onCountryToggle(country)"
+        />
         {{ country.country }}
       </label>
-
       <div *ngFor="let city of country.cities" style="margin-left: 10px;">
         <label>
-          <input type="checkbox" [(ngModel)]="city.selected" (change)="onCityToggle(city, country)">
+          <input
+            type="checkbox"
+            [(ngModel)]="city.selected"
+            (change)="onCityToggle(city, country)"
+          />
           {{ city.name }}
         </label>
       </div>
